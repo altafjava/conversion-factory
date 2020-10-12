@@ -1,5 +1,74 @@
-.container {
+.main__container {
+  margin: 5rem 0;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+}
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 2.5rem;
+}
+.hide {
+  display: none;
+}
+.div__upload {
+  width: 150px;
+  height: 150px;
+  border: 2px dashed black;
+  border-radius: 50%;
+  cursor: pointer;
+  font-weight: bold;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0 2rem;
+}
+.upload__details {
+  line-height: 1;
+  font-weight: bold;
+  margin: 0 1rem;
+}
+.upload__details td {
+  padding-bottom: 0.5rem;
+  padding-left: 0.5rem;
+}
+select {
+  outline: none;
+  border: 2px dashed black;
+  box-sizing: content-box;
+  padding: 20px;
+  font-size: 2rem;
+  font-weight: bold;
+}
+.div__select1 {
+  margin: 0 2rem;
+}
+.div__to {
+  margin: 0 2rem;
+}
+.div__select2 {
+  margin: 0 2rem;
+}
+.div__button {
+  margin: 2.5rem;
+}
+button {
+  outline: none;
+  cursor: pointer;
+  font-size: 2rem;
+  font-weight: bold;
+  padding: 16px 48px;
+  color: white;
+  background: #ff3333;
+  border: 2px dashed #ff3333;
+  border-radius: 8px;
+  box-shadow: 1px 2px 30px 5px rgba(0, 0, 0, 0.1);
+}
+button:hover {
+  color: #ff3333;
+  background: white;
 }
