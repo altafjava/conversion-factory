@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import ConversionService from '../api/ConversionService';
+import { DANGER } from '../constant/Color';
+import AlertMessage from './AlertMessage';
 import './Container.css';
 
 const uploadClick = () => {
@@ -8,8 +11,10 @@ const uploadClick = () => {
 
 const Conversion = () => {
   const [file, setFile] = useState('');
-  const [input, setInput] = useState('coconut');
-  const [output, setOutput] = useState('mango');
+  const [input, setInput] = useState('csv');
+  const [output, setOutput] = useState('json');
+  const [notification, setNotification] = useState({});
+  const nameStartEndLength = 12;
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -21,14 +26,47 @@ const Conversion = () => {
     setOutput(e.target.value);
   };
   const handleConvert = (e) => {
-    e.preventDefault();
-    alert('Converting ' + file.name + ' from ' + input + ' to ' + output);
+    let btn = document.querySelector('button');
+    let spinner = document.getElementById('spinner');
+    spinner.classList.add('fa-spinner');
+    btn.disabled = true;
+    btn.className = 'button__disabled';
+    if (file.name === undefined) {
+      showAlert('Please choose a file');
+    } else {
+      const regex = /(?:\.([^.]+))?$/;
+      let fileExtension = regex.exec(file.name)[1];
+      if (fileExtension === undefined) {
+        showAlert('File has no extension. Please choose different file');
+      } else {
+        ConversionService.convert(file, output)
+          .then((response) => {
+            console.log(response.data);
+            spinner.classList.remove('fa-spinner');
+            btn.disabled = false;
+            btn.classList.remove('button__disabled');
+            btn.textContent = 'Download';
+          })
+          .catch((error) => {
+            console.log(error);
+            spinner.classList.remove('fa-spinner');
+            btn.disabled = false;
+            btn.classList.remove('button__disabled');
+          });
+      }
+    }
   };
+  const showAlert = (message) => {
+    setNotification({ hasError: true, message: message });
+    setTimeout(() => setNotification({ hasError: false, message: message }), 3000);
+  };
+
   return (
     <div className='main__container'>
+      {notification.hasError && <AlertMessage background={DANGER} message={notification.message} />}
       <div className='container'>
         <div className='hide'>
-          <input id='inputTypeFile' type='file' accept='image/png, image/jpeg' onChange={handleFileChange} />
+          <input id='inputTypeFile' type='file' onChange={handleFileChange} />
         </div>
         <div className='div__upload' onClick={uploadClick}>
           <img src='/assets/icons/upload-icon.svg' alt='upload files' width='50px' />
@@ -40,7 +78,13 @@ const Conversion = () => {
               <tbody>
                 <tr>
                   <td className='align-right'>Name :</td>
-                  <td>{file && file.name}</td>
+                  <td>
+                    {file && file.name.length > nameStartEndLength + nameStartEndLength + 8
+                      ? file.name.substring(0, nameStartEndLength) +
+                        '....' +
+                        file.name.substring(file.name.length - nameStartEndLength, file.name.length)
+                      : file.name}
+                  </td>
                 </tr>
                 <tr>
                   <td className='align-right'>Size :</td>
@@ -55,27 +99,31 @@ const Conversion = () => {
           </div>
         )}
         <div className='div__select1'>
-          <select defaultValue='coconut' id='select1' onChange={handleChangeSelect1}>
-            <option value='grapefruit'>Grapefruit</option>
-            <option value='lime'>Lime</option>
-            <option value='coconut'>Coconut</option>
-            <option value='mango'>Mango</option>
+          <select defaultValue='csv' id='select1' onChange={handleChangeSelect1}>
+            <option value='csv'>CSV</option>
+            <option value='json'>JSON</option>
+            <option value='parquet'>PARQUET</option>
+            <option value='xml'>XML</option>
+            <option value='avro'>AVRO</option>
           </select>
         </div>
         <div className='div__to'>
           <h1>to</h1>
         </div>
         <div className='div__select2'>
-          <select defaultValue='mango' id='select2' onChange={handleChangeSelect2}>
-            <option value='grapefruit'>Grapefruit</option>
-            <option value='lime'>Lime</option>
-            <option value='coconut'>Coconut</option>
-            <option value='mango'>Mango</option>
+          <select defaultValue='json' id='select2' onChange={handleChangeSelect2}>
+            <option value='csv'>CSV</option>
+            <option value='json'>JSON</option>
+            <option value='parquet'>PARQUET</option>
+            <option value='xml'>XML</option>
+            <option value='avro'>AVRO</option>
           </select>
         </div>
       </div>
       <div className='div__button'>
-        <button onClick={handleConvert}>Convert</button>
+        <button id='button' onClick={handleConvert}>
+          Convert <i id='spinner' className='fa spin'></i>
+        </button>
       </div>
     </div>
   );

@@ -14,6 +14,9 @@
 .hide {
   display: none;
 }
+.show {
+  display: block;
+}
 .div__upload {
   width: 150px;
   height: 150px;
@@ -59,16 +62,35 @@ select {
 button {
   outline: none;
   cursor: pointer;
+  background: #ff3333;
   font-size: 2rem;
   font-weight: bold;
-  padding: 16px 48px;
+  padding: 16px 32px;
   color: white;
-  background: #ff3333;
   border: 2px dashed #ff3333;
   border-radius: 8px;
   box-shadow: 1px 2px 30px 5px rgba(0, 0, 0, 0.1);
 }
+
+.button__disabled {
+  background: #ff8080;
+  cursor: unset;
+  border: 2px dashed #ff8080;
+}
+.button__disabled:hover {
+  color: white;
+  background: #ff8080;
+}
 button:hover {
   color: #ff3333;
   background: white;
+}
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  100% {
+    -webkit-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
 }
