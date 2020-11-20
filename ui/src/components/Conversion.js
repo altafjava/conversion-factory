@@ -11,6 +11,7 @@ const uploadClick = () => {
 
 const Conversion = () => {
   const [file, setFile] = useState('');
+  const [isButtonDisabled, setButtonDisabled] = useState(false);
   const [input, setInput] = useState('csv');
   const [downloadUrl, setDownloadUrl] = useState('');
   const [output, setOutput] = useState('json');
@@ -18,7 +19,26 @@ const Conversion = () => {
   const nameStartEndLength = 12;
 
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+    const uploadedFile = e.target.files[0];
+    setFile(uploadedFile);
+    if (uploadedFile === undefined) {
+      setButtonDisabled(true);
+    } else {
+      const regex = /(?:\.([^.]+))?$/;
+      let fileExtension = regex.exec(uploadedFile.name)[1];
+      if (fileExtension === undefined) {
+        showAlert('File has no extension. Please choose different file', WARNING);
+        setButtonDisabled(true);
+      } else {
+        const isFileTypePresent = fileTypes.filter((fileType) => fileType.key === fileExtension).length > 0;
+        if (!isFileTypePresent) {
+          showAlert('Sorry, Currently we are not converting .' + fileExtension + ' file', INFO);
+          setButtonDisabled(true);
+        } else {
+          setButtonDisabled(false);
+        }
+      }
+    }
   };
   const handleChangeSelect1 = (e) => {
     setInput(e.target.value);
@@ -26,6 +46,13 @@ const Conversion = () => {
   const handleChangeSelect2 = (e) => {
     setOutput(e.target.value);
   };
+  const fileTypes = [
+    { key: 'csv', value: 'CSV' },
+    { key: 'json', value: 'JSON' },
+    { key: 'parquet', value: 'PARQUET' },
+    { key: 'xml', value: 'XML' },
+    { key: 'avro', value: 'AVRO' },
+  ];
   const handleConvert = (e) => {
     let btn = document.getElementById('convert-button');
     if (btn.innerText.trim() === 'Convert') {
@@ -33,31 +60,25 @@ const Conversion = () => {
       if (file.name === undefined) {
         showAlert('Please choose a file', WARNING);
       } else {
-        const regex = /(?:\.([^.]+))?$/;
-        let fileExtension = regex.exec(file.name)[1];
-        if (fileExtension === undefined) {
-          showAlert('File has no extension. Please choose different file', WARNING);
-        } else {
-          let spinner = document.getElementById('spinner');
-          spinner.classList.add('fa-spinner');
-          btn.classList.add('button__disabled');
-          btn.classList.remove('button__hover');
-          ConversionService.convert(file, output)
-            .then((response) => {
-              showAlert('File successfully converted. Click the Download button to download', SUCCESS);
-              setDownloadUrl(response.data.downloadUrl);
-              spinner.classList.remove('fa-spinner');
-              btn.classList.remove('button__disabled');
-              btn.classList.add('button__hover');
-              btn.textContent = 'Download';
-            })
-            .catch((error) => {
-              showAlert(error.message, DANGER);
-              spinner.classList.remove('fa-spinner');
-              btn.classList.remove('button__disabled');
-              btn.classList.add('button__hover');
-            });
-        }
+        let spinner = document.getElementById('spinner');
+        spinner.classList.add('fa-spinner');
+        btn.classList.add('button__disabled');
+        btn.classList.remove('button__hover');
+        ConversionService.convert(file, output)
+          .then((response) => {
+            showAlert('File successfully converted. Click the Download button to download', SUCCESS);
+            setDownloadUrl(response.data.downloadUrl);
+            spinner.classList.remove('fa-spinner');
+            btn.classList.remove('button__disabled');
+            btn.classList.add('button__hover');
+            btn.textContent = 'Download';
+          })
+          .catch((error) => {
+            showAlert(error.message, DANGER);
+            spinner.classList.remove('fa-spinner');
+            btn.classList.remove('button__disabled');
+            btn.classList.add('button__hover');
+          });
       }
     } else if (btn.innerText === 'Download') {
     } else {
@@ -130,7 +151,12 @@ const Conversion = () => {
         </div>
       </div>
       <div className='div__button'>
-        <a id='convert-button' className='button button__hover' href={downloadUrl} onClick={handleConvert}>
+        <a
+          id='convert-button'
+          className={`button button__hover ${isButtonDisabled ? ' button__disabled' : ''}`}
+          href={downloadUrl}
+          onClick={handleConvert}
+        >
           Convert <i id='spinner' className='fa spin'></i>
         </a>
       </div>
