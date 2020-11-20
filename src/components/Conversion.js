@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import ConversionService from '../api/ConversionService';
-import { DANGER } from '../constant/Color';
+import { DANGER, INFO, SUCCESS, WARNING } from '../constant/Color';
 import AlertMessage from './AlertMessage';
-import './Container.css';
+import './Conversion.css';
 
 const uploadClick = () => {
   var inputTypeFile = document.getElementById('inputTypeFile');
@@ -12,6 +12,7 @@ const uploadClick = () => {
 const Conversion = () => {
   const [file, setFile] = useState('');
   const [input, setInput] = useState('csv');
+  const [downloadUrl, setDownloadUrl] = useState('');
   const [output, setOutput] = useState('json');
   const [notification, setNotification] = useState({});
   const nameStartEndLength = 12;
@@ -26,44 +27,52 @@ const Conversion = () => {
     setOutput(e.target.value);
   };
   const handleConvert = (e) => {
-    let btn = document.querySelector('button');
-    let spinner = document.getElementById('spinner');
-    spinner.classList.add('fa-spinner');
-    btn.disabled = true;
-    btn.className = 'button__disabled';
-    if (file.name === undefined) {
-      showAlert('Please choose a file');
-    } else {
-      const regex = /(?:\.([^.]+))?$/;
-      let fileExtension = regex.exec(file.name)[1];
-      if (fileExtension === undefined) {
-        showAlert('File has no extension. Please choose different file');
+    let btn = document.getElementById('convert-button');
+    if (btn.innerText.trim() === 'Convert') {
+      e.preventDefault();
+      if (file.name === undefined) {
+        showAlert('Please choose a file', WARNING);
       } else {
-        ConversionService.convert(file, output)
-          .then((response) => {
-            console.log(response.data);
-            spinner.classList.remove('fa-spinner');
-            btn.disabled = false;
-            btn.classList.remove('button__disabled');
-            btn.textContent = 'Download';
-          })
-          .catch((error) => {
-            console.log(error);
-            spinner.classList.remove('fa-spinner');
-            btn.disabled = false;
-            btn.classList.remove('button__disabled');
-          });
+        const regex = /(?:\.([^.]+))?$/;
+        let fileExtension = regex.exec(file.name)[1];
+        if (fileExtension === undefined) {
+          showAlert('File has no extension. Please choose different file', WARNING);
+        } else {
+          let spinner = document.getElementById('spinner');
+          spinner.classList.add('fa-spinner');
+          btn.classList.add('button__disabled');
+          btn.classList.remove('button__hover');
+          ConversionService.convert(file, output)
+            .then((response) => {
+              showAlert('File successfully converted. Click the Download button to download', SUCCESS);
+              setDownloadUrl(response.data.downloadUrl);
+              spinner.classList.remove('fa-spinner');
+              btn.classList.remove('button__disabled');
+              btn.classList.add('button__hover');
+              btn.textContent = 'Download';
+            })
+            .catch((error) => {
+              showAlert(error.message, DANGER);
+              spinner.classList.remove('fa-spinner');
+              btn.classList.remove('button__disabled');
+              btn.classList.add('button__hover');
+            });
+        }
       }
+    } else if (btn.innerText === 'Download') {
+    } else {
+      e.preventDefault();
+      showAlert("Don't try to be oversmart", INFO);
     }
   };
-  const showAlert = (message) => {
-    setNotification({ hasError: true, message: message });
+  const showAlert = (message, background) => {
+    setNotification({ hasError: true, message: message, background: background });
     setTimeout(() => setNotification({ hasError: false, message: message }), 3000);
   };
 
   return (
     <div className='main__container'>
-      {notification.hasError && <AlertMessage background={DANGER} message={notification.message} />}
+      {notification.hasError && <AlertMessage background={notification.background} message={notification.message} />}
       <div className='container'>
         <div className='hide'>
           <input id='inputTypeFile' type='file' onChange={handleFileChange} />
@@ -121,9 +130,9 @@ const Conversion = () => {
         </div>
       </div>
       <div className='div__button'>
-        <button id='button' onClick={handleConvert}>
+        <a id='convert-button' className='button button__hover' href={downloadUrl} onClick={handleConvert}>
           Convert <i id='spinner' className='fa spin'></i>
-        </button>
+        </a>
       </div>
     </div>
   );

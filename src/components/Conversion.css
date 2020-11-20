@@ -59,7 +59,7 @@ select {
 .div__button {
   margin: 2.5rem;
 }
-button {
+.button {
   outline: none;
   cursor: pointer;
   background: #ff3333;
@@ -71,20 +71,21 @@ button {
   border-radius: 8px;
   box-shadow: 1px 2px 30px 5px rgba(0, 0, 0, 0.1);
 }
-
+.button__hover:hover {
+  color: #ff3333;
+  background: white;
+}
 .button__disabled {
+  cursor: default;
+  pointer-events: none;
   background: #ff8080;
-  cursor: unset;
   border: 2px dashed #ff8080;
 }
 .button__disabled:hover {
   color: white;
   background: #ff8080;
 }
-button:hover {
-  color: #ff3333;
-  background: white;
-}
+
 .spin {
   animation: spin 0.8s linear infinite;
 }
