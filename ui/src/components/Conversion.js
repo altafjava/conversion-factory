@@ -16,9 +16,16 @@ const Conversion = () => {
   const [downloadUrl, setDownloadUrl] = useState('');
   const [output, setOutput] = useState('json');
   const [notification, setNotification] = useState({});
+
   const nameStartEndLength = 12;
+  const fileTypes = [
+    { key: 'csv', value: 'CSV' },
+    { key: 'json', value: 'JSON' },
+  ];
 
   const handleFileChange = (e) => {
+    const btn = document.getElementById('convert-button');
+    btn.innerHTML = "Convert <i id='spinner' class='fa spin'></i>";
     const uploadedFile = e.target.files[0];
     setFile(uploadedFile);
     if (uploadedFile === undefined) {
@@ -36,6 +43,13 @@ const Conversion = () => {
           setButtonDisabled(true);
         } else {
           setButtonDisabled(false);
+          const sourceIndex = fileTypes.findIndex((fileType) => fileType.key === fileExtension);
+          const select1 = document.getElementById('select1');
+          select1.selectedIndex = sourceIndex;
+          setInput(select1.value);
+          const select2 = document.getElementById('select2');
+          select2.selectedIndex = sourceIndex === 0 ? 1 : 0;
+          setOutput(select2.value);
         }
       }
     }
@@ -46,13 +60,7 @@ const Conversion = () => {
   const handleChangeSelect2 = (e) => {
     setOutput(e.target.value);
   };
-  const fileTypes = [
-    { key: 'csv', value: 'CSV' },
-    { key: 'json', value: 'JSON' },
-    { key: 'parquet', value: 'PARQUET' },
-    { key: 'xml', value: 'XML' },
-    { key: 'avro', value: 'AVRO' },
-  ];
+
   const handleConvert = (e) => {
     let btn = document.getElementById('convert-button');
     if (btn.innerText.trim() === 'Convert') {
@@ -61,23 +69,17 @@ const Conversion = () => {
         showAlert('Please choose a file', WARNING);
       } else {
         let spinner = document.getElementById('spinner');
-        spinner.classList.add('fa-spinner');
-        btn.classList.add('button__disabled');
-        btn.classList.remove('button__hover');
+        disableButton(btn, spinner);
         ConversionService.convert(file, output)
           .then((response) => {
             showAlert('File successfully converted. Click the Download button to download', SUCCESS);
             setDownloadUrl(response.data.downloadUrl);
-            spinner.classList.remove('fa-spinner');
-            btn.classList.remove('button__disabled');
-            btn.classList.add('button__hover');
-            btn.textContent = 'Download';
+            btn.innerHTML = "Download <i id='spinner' class='fa spin'></i>";
+            enableButton(btn, spinner);
           })
           .catch((error) => {
             showAlert(error.message, DANGER);
-            spinner.classList.remove('fa-spinner');
-            btn.classList.remove('button__disabled');
-            btn.classList.add('button__hover');
+            enableButton(btn, spinner);
           });
       }
     } else if (btn.innerText === 'Download') {
@@ -85,6 +87,16 @@ const Conversion = () => {
       e.preventDefault();
       showAlert("Don't try to be oversmart", INFO);
     }
+  };
+  const disableButton = (btn, spinner) => {
+    spinner.classList.add('fa-spinner');
+    btn.classList.add('button__disabled');
+    btn.classList.remove('button__hover');
+  };
+  const enableButton = (btn, spinner) => {
+    spinner.classList.remove('fa-spinner');
+    btn.classList.remove('button__disabled');
+    btn.classList.add('button__hover');
   };
   const showAlert = (message, background) => {
     setNotification({ hasError: true, message: message, background: background });
