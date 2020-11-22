@@ -62,6 +62,7 @@ select {
 .button {
   outline: none;
   cursor: pointer;
+  text-decoration: none;
   background: #ff3333;
   font-size: 2rem;
   font-weight: bold;

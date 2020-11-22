@@ -1,9 +1,10 @@
 import Axios from 'axios';
 
 class ConversionService {
-  convert(file, outputFormat) {
+  convert(file, inputFormat, outputFormat) {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('inputFormat', inputFormat);
     formData.append('outputFormat', outputFormat);
     return Axios({
       method: 'POST',

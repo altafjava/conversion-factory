@@ -26,6 +26,7 @@ const Conversion = () => {
   const handleFileChange = (e) => {
     const btn = document.getElementById('convert-button');
     btn.innerHTML = "Convert <i id='spinner' class='fa spin'></i>";
+    enableButton(btn);
     const uploadedFile = e.target.files[0];
     setFile(uploadedFile);
     if (uploadedFile === undefined) {
@@ -69,32 +70,35 @@ const Conversion = () => {
         showAlert('Please choose a file', WARNING);
       } else {
         let spinner = document.getElementById('spinner');
+        btn.innerHTML = "Converting <i id='spinner' class='fa fa-spinner spin'></i>";
         disableButton(btn, spinner);
-        ConversionService.convert(file, output)
+        ConversionService.convert(file, input, output)
           .then((response) => {
             showAlert('File successfully converted. Click the Download button to download', SUCCESS);
             setDownloadUrl(response.data.downloadUrl);
             btn.innerHTML = "Download <i id='spinner' class='fa spin'></i>";
-            enableButton(btn, spinner);
+            enableButton(btn);
           })
           .catch((error) => {
-            showAlert(error.message, DANGER);
-            enableButton(btn, spinner);
+            if (error.response) {
+              showAlert(error.response.data, DANGER);
+            } else {
+              showAlert(error.message, DANGER);
+            }
+            btn.innerHTML = "Convert <i id='spinner' class='fa spin'></i>";
           });
       }
-    } else if (btn.innerText === 'Download') {
+    } else if (btn.innerText.trim() === 'Download') {
     } else {
       e.preventDefault();
       showAlert("Don't try to be oversmart", INFO);
     }
   };
-  const disableButton = (btn, spinner) => {
-    btn.innerHTML = "Converting <i id='spinner' class='fa fa-spinner spin'></i>";
+  const disableButton = (btn) => {
     btn.classList.add('button__disabled');
     btn.classList.remove('button__hover');
   };
-  const enableButton = (btn, spinner) => {
-    btn.innerHTML = "Convert <i id='spinner' class='fa spin'></i>";
+  const enableButton = (btn) => {
     btn.classList.remove('button__disabled');
     btn.classList.add('button__hover');
   };
