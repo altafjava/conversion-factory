@@ -4,11 +4,6 @@ import { DANGER, INFO, SUCCESS, WARNING } from '../constant/Color';
 import AlertMessage from './AlertMessage';
 import './Conversion.css';
 
-const uploadClick = () => {
-  var inputTypeFile = document.getElementById('inputTypeFile');
-  inputTypeFile.click();
-};
-
 const Conversion = () => {
   const [file, setFile] = useState('');
   const [isButtonDisabled, setButtonDisabled] = useState(false);
@@ -22,6 +17,11 @@ const Conversion = () => {
     { key: 'csv', value: 'CSV' },
     { key: 'json', value: 'JSON' },
   ];
+
+  const uploadClick = () => {
+    var inputTypeFile = document.getElementById('inputTypeFile');
+    inputTypeFile.click();
+  };
 
   const handleFileChange = (e) => {
     const btn = document.getElementById('convert-button');
@@ -89,12 +89,12 @@ const Conversion = () => {
     }
   };
   const disableButton = (btn, spinner) => {
-    spinner.classList.add('fa-spinner');
+    btn.innerHTML = "Converting <i id='spinner' class='fa fa-spinner spin'></i>";
     btn.classList.add('button__disabled');
     btn.classList.remove('button__hover');
   };
   const enableButton = (btn, spinner) => {
-    spinner.classList.remove('fa-spinner');
+    btn.innerHTML = "Convert <i id='spinner' class='fa spin'></i>";
     btn.classList.remove('button__disabled');
     btn.classList.add('button__hover');
   };
