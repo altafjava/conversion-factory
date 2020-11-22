@@ -142,11 +142,11 @@ const Conversion = () => {
         )}
         <div className='div__select1'>
           <select defaultValue='csv' id='select1' onChange={handleChangeSelect1}>
-            <option value='csv'>CSV</option>
-            <option value='json'>JSON</option>
-            <option value='parquet'>PARQUET</option>
-            <option value='xml'>XML</option>
-            <option value='avro'>AVRO</option>
+            {fileTypes.map((fileType) => (
+              <option key={fileType.key} value={fileType.key}>
+                {fileType.value}
+              </option>
+            ))}
           </select>
         </div>
         <div className='div__to'>
@@ -154,11 +154,11 @@ const Conversion = () => {
         </div>
         <div className='div__select2'>
           <select defaultValue='json' id='select2' onChange={handleChangeSelect2}>
-            <option value='csv'>CSV</option>
-            <option value='json'>JSON</option>
-            <option value='parquet'>PARQUET</option>
-            <option value='xml'>XML</option>
-            <option value='avro'>AVRO</option>
+            {fileTypes.map((fileType) => (
+              <option key={fileType.key} value={fileType.key}>
+                {fileType.value}
+              </option>
+            ))}
           </select>
         </div>
       </div>
