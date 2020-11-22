@@ -11,6 +11,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -20,27 +21,58 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
 import com.altafjava.beans.UploadFileResponse;
 import com.altafjava.enums.FileType;
 import com.altafjava.service.ConversionService;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import com.fasterxml.jackson.dataformat.csv.CsvSchema.Builder;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author ALTAF
  *
  */
 @Service
+@Slf4j
 public class ConversionServiceImpl implements ConversionService {
 
 	@Override
 	public ResponseEntity<?> convert(MultipartFile multipartFile, String inputFormat, String outputFormat) {
 		storeInputFile(multipartFile);
-		if (inputFormat.equalsIgnoreCase(FileType.CSV.name()) && outputFormat.equalsIgnoreCase(FileType.JSON.name())) {
-			return new ResponseEntity<>(convertCsvToJson(multipartFile, outputFormat), HttpStatus.OK);
+		String outputDirName = "output";
+		Path outputPath = Paths.get(outputDirName);
+		if (!Files.exists(outputPath)) {
+			try {
+				Files.createDirectory(outputPath);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
-		return new ResponseEntity<>("Sorry, currently we are not converting ." + inputFormat + " to ." + outputFormat, HttpStatus.INTERNAL_SERVER_ERROR);
+		String originalFileName = multipartFile.getOriginalFilename();
+		String targetFileName = originalFileName.replaceFirst("[.][^.]+$", "");
+		String targetFileNameWithExtension = targetFileName + "_" + System.currentTimeMillis() + "." + outputFormat;
+		File outputFile = new File(outputDirName + "/" + targetFileNameWithExtension);
+
+		boolean isConvertedSuccessfully = false;
+		if (inputFormat.equalsIgnoreCase(FileType.CSV.name()) && outputFormat.equalsIgnoreCase(FileType.JSON.name())) {
+			isConvertedSuccessfully = convertCsvToJson(multipartFile, outputFormat, outputFile);
+		} else if (inputFormat.equalsIgnoreCase(FileType.JSON.name()) && outputFormat.equalsIgnoreCase(FileType.CSV.name())) {
+			isConvertedSuccessfully = convertJsonToCsv(multipartFile, outputFormat, outputFile);
+		}
+
+		if (isConvertedSuccessfully) {
+			String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath().path("/download/").path(targetFileNameWithExtension).toUriString();
+			Path outputFilePath = outputPath.resolve(Paths.get(targetFileNameWithExtension)).normalize().toAbsolutePath();
+			String contentType = getContentType(outputFilePath);
+			return new ResponseEntity<>(new UploadFileResponse(targetFileNameWithExtension, fileDownloadUri, contentType, outputFile.length()), HttpStatus.OK);
+		} else {
+			return new ResponseEntity<>("Sorry, currently we are not converting ." + inputFormat + " to ." + outputFormat, HttpStatus.INTERNAL_SERVER_ERROR);
+		}
 	}
 
 	@Override
@@ -59,20 +91,27 @@ public class ConversionServiceImpl implements ConversionService {
 				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"").header("Accept", "*/*").body(resource);
 	}
 
-	public UploadFileResponse convertCsvToJson(MultipartFile multipartFile, String outputFormat) {
-		String outputDirName = "output";
-		Path outputPath = Paths.get(outputDirName);
-		if (!Files.exists(outputPath)) {
-			try {
-				Files.createDirectory(outputPath);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+	private boolean convertJsonToCsv(MultipartFile multipartFile, String outputFormat, File outputFile) {
+		boolean isConvertedSuccessfully = false;
+		try {
+			JsonNode jsonTree = new ObjectMapper().readTree(multipartFile.getInputStream());
+			Builder csvSchemaBuilder = CsvSchema.builder();
+			JsonNode firstObject = jsonTree.elements().next();
+			firstObject.fieldNames().forEachRemaining(fieldName -> {
+				csvSchemaBuilder.addColumn(fieldName);
+			});
+			CsvSchema csvSchema = csvSchemaBuilder.build().withHeader();
+			CsvMapper csvMapper = new CsvMapper();
+			csvMapper.writerFor(JsonNode.class).with(csvSchema).writeValue(outputFile, jsonTree);
+			isConvertedSuccessfully = true;
+		} catch (IOException e) {
+			log.error("Failed to convert JSON to CSV: " + e);
 		}
-		String originalFileName = multipartFile.getOriginalFilename();
-		String targetFileName = originalFileName.replaceFirst("[.][^.]+$", "");
-		String targetFileNameWithExtension = targetFileName + "_" + System.currentTimeMillis() + ".json";
-		File output = new File(outputDirName + "/" + targetFileNameWithExtension);
+		return isConvertedSuccessfully;
+	}
+
+	public boolean convertCsvToJson(MultipartFile multipartFile, String outputFormat, File outputFile) {
+		boolean isConvertedSuccessfully = false;
 		List<Object> csvObjects = Collections.EMPTY_LIST;
 		if (outputFormat.equalsIgnoreCase(FileType.JSON.name())) {
 			CsvSchema csvSchema = CsvSchema.builder().setUseHeader(true).build();
@@ -80,15 +119,13 @@ public class ConversionServiceImpl implements ConversionService {
 			try {
 				csvObjects = csvMapper.readerFor(Map.class).with(csvSchema).readValues(multipartFile.getInputStream()).readAll();
 				ObjectMapper objectMapper = new ObjectMapper();
-				objectMapper.writerWithDefaultPrettyPrinter().writeValue(output, csvObjects);
+				objectMapper.writerWithDefaultPrettyPrinter().writeValue(outputFile, csvObjects);
+				isConvertedSuccessfully = true;
 			} catch (IOException e) {
-				e.printStackTrace();
+				log.error("Failed to convert CSV to JSON: " + e);
 			}
 		}
-		String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath().path("/download/").path(targetFileNameWithExtension).toUriString();
-		Path outputFilePath = outputPath.resolve(Paths.get(targetFileNameWithExtension)).normalize().toAbsolutePath();
-		String contentType = getContentType(outputFilePath);
-		return new UploadFileResponse(targetFileNameWithExtension, fileDownloadUri, contentType, output.length());
+		return isConvertedSuccessfully;
 	}
 
 	private void storeInputFile(MultipartFile multipartFile) {
@@ -107,13 +144,13 @@ public class ConversionServiceImpl implements ConversionService {
 	}
 
 	private String getContentType(Path path) {
-		String contentType = "application/octet-stream";
+		String contentType = null;
 		try {
 			contentType = Files.probeContentType(path);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		return contentType;
+		return contentType == null ? "application/octet-stream" : contentType;
 	}
 
 }

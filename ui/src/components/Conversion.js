@@ -138,7 +138,7 @@ const Conversion = () => {
                 </tr>
                 <tr>
                   <td className='align-right'>Type :</td>
-                  <td>{file && file.type}</td>
+                  <td>{file && input === 'csv' ? 'text/csv' : file.type}</td>
                 </tr>
               </tbody>
             </table>
